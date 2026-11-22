@@ -809,7 +809,21 @@ img,svg,canvas{max-width:100%}
  #screen0 > .panel.hero { align-content:start !important; justify-content:flex-start !important; padding-top:1cm !important; overflow-y:auto !important; }
 }
 </style>
-<style>button.mission-not-ready{opacity:.48!important;cursor:not-allowed!important;filter:grayscale(.35)}</style></head>
+<style>button.mission-not-ready{opacity:.48!important;cursor:not-allowed!important;filter:grayscale(.35)}</style><style id="tablet-landscape-scroll-final-fix">
+/* Final landscape fix: allow reaching every bottom action by scrolling the page. */
+@media screen and (min-width:700px) and (orientation:landscape){
+ html,body{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
+ body{min-height:100dvh!important;-webkit-overflow-scrolling:touch}
+ .app{height:auto!important;min-height:100dvh!important;max-height:none!important;overflow:visible!important;padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))!important}
+ .screen,.screen.active{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;flex:0 0 auto!important}
+ .screen.active{display:flex!important}
+ .screen.active>.panel,.screen.active>.expedition-panel,.panel{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important}
+ #screenMap,#screenMap.screen.active{overflow:visible!important}
+ #screenMap .expedition-panel{height:auto!important;min-height:0!important;overflow:visible!important}
+ #screenMap .expedition-map{max-height:none!important}
+ .modal.open,.family-mission-overlay.open,.treasure-overlay.open,.cert-overlay.open,.backpack-modal.open,.team-register-overlay.open{overflow-y:auto!important}
+}
+</style></head>
 <body>
 <div class="app">
 <header class="topbar">
@@ -1952,7 +1966,7 @@ function familyImportBackup(input){
  </div><label for="reviewMessage" style="display:block;font-size:19px;font-weight:800;margin-bottom:10px">Напишіть відгук</label>
  <textarea id="reviewMessage" placeholder="Що вам сподобалося? Що можна покращити?" oninput="saveReviewDraft()"></textarea>
  <div class="review-actions"><button type="button" class="review-send" onclick="submitReview()">📨 Надіслати відгук</button><button type="button" class="review-back" onclick="closeReviewPage()">← До сімейної бесіди</button></div>
- <p id="reviewStatus" role="status" aria-live="polite"></p><p style="font-size:14px">Наразі підключення до Google Таблиці ще налаштовується. До підключення відгук зберігається лише на цьому пристрої.</p></div>
+ <p id="reviewStatus" role="status" aria-live="polite"></p><p style="font-size:14px">Відгуки надсилаються до Google Таблиці. Не вказуйте у відгуку особисті дані дітей.</p></div>
 </section>
 <script>
 var reviewRating=0;
@@ -1960,9 +1974,28 @@ function saveReviewDraft(){try{localStorage.setItem('territory_review_draft_v1',
 function setReviewRating(value){reviewRating=value;document.querySelectorAll('.review-stars button').forEach((b,i)=>{b.classList.toggle('chosen',i<value);b.setAttribute('aria-pressed',String(i+1===value))});saveReviewDraft()}
 function openReviewPage(){try{var saved=JSON.parse(localStorage.getItem('territory_review_draft_v1')||'{}');document.getElementById('reviewMessage').value=saved.message||'';setReviewRating(saved.rating||0)}catch(e){setReviewRating(0)}document.getElementById('reviewStatus').textContent='';document.getElementById('reviewPage').classList.add('review-visible');window.scrollTo(0,0)}
 function closeReviewPage(){document.getElementById('reviewPage').classList.remove('review-visible');if(typeof familySaveNow==='function')familySaveNow()}
-async function submitReview(){var message=document.getElementById('reviewMessage').value.trim();var status=document.getElementById('reviewStatus');if(!reviewRating){status.textContent='Оберіть оцінку від 1 до 5 зірочок.';return}if(!message){status.textContent='Напишіть, будь ласка, кілька слів про гру.';return}
- var entry={rating:reviewRating,message:message,createdAt:new Date().toISOString(),sent:false};
- try{var list=JSON.parse(localStorage.getItem('territory_review_pending_v1')||'[]');list.push(entry);localStorage.setItem('territory_review_pending_v1',JSON.stringify(list));localStorage.removeItem('territory_review_draft_v1');status.textContent='Відгук збережено на пристрої. Надсилання до Google Таблиці стане доступним після підключення.';setTimeout(closeReviewPage,1700)}catch(e){status.textContent='Не вдалося зберегти відгук. Скопіюйте текст перед виходом.'}
+const REVIEW_ENDPOINT='https://script.google.com/macros/s/AKfycbyGg2yomFb1Q6lHc6czSEkwXL9CBELL8crhXhQaZvvf7Xy2NzZ96caf54_KVf2skaMlmQ/exec';
+let reviewSending=false;
+async function submitReview(){
+ const message=document.getElementById('reviewMessage').value.trim();
+ const status=document.getElementById('reviewStatus');
+ if(!reviewRating){status.textContent='Оберіть оцінку від 1 до 5 зірочок.';return}
+ if(!message){status.textContent='Напишіть, будь ласка, кілька слів про гру.';return}
+ if(message.length>2000){status.textContent='Відгук має містити не більше 2000 символів.';return}
+ if(reviewSending)return;
+ const btn=document.querySelector('#reviewPage .review-send');
+ reviewSending=true;btn.disabled=true;status.textContent='Надсилаємо відгук…';
+ try{
+  // Google Apps Script не повертає доступну для читання CORS-відповідь з GitHub Pages.
+  // Тому підтверджуємо лише завершення мережевого запиту, а запис перевіряємо в таблиці.
+  await fetch(REVIEW_ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({rating:reviewRating,review:message})});
+  localStorage.removeItem('territory_review_draft_v1');
+  status.textContent='Відгук надіслано. Перевірте його появу в Google Таблиці — браузер не може підтвердити запис автоматично.';
+  document.getElementById('reviewMessage').value='';setReviewRating(0);
+ }catch(err){
+  status.textContent='Не вдалося надіслати відгук. Перевірте інтернет і спробуйте ще раз — ваш текст залишився у формі.';
+  saveReviewDraft();
+ }finally{reviewSending=false;btn.disabled=false}
 }
 </script>
 <script>
