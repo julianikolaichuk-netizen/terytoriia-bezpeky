@@ -823,7 +823,37 @@ img,svg,canvas{max-width:100%}
  #screenMap .expedition-map{max-height:none!important}
  .modal.open,.family-mission-overlay.open,.treasure-overlay.open,.cert-overlay.open,.backpack-modal.open,.team-register-overlay.open{overflow-y:auto!important}
 }
-</style></head>
+</style>
+<style id="landscape-scroll-final-fix-20261122">
+/* Last-in-cascade override: allow the document to grow on landscape tablets. */
+@media screen and (orientation:landscape) {
+ html, body {height:auto!important;min-height:100%!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior-y:auto!important;}
+ body {position:static!important;-webkit-overflow-scrolling:touch!important;}
+ .app {height:auto!important;min-height:100dvh!important;max-height:none!important;overflow:visible!important;display:flex!important;flex-direction:column!important;padding-bottom:calc(48px + env(safe-area-inset-bottom, 0px))!important;}
+ main {height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;flex:1 0 auto!important;}
+ .screen.active {height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;flex:0 0 auto!important;}
+ .screen.active > .panel, .screen.active .panel.hero {height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;}
+ #screen0, #screen0 .hero {height:auto!important;max-height:none!important;overflow:visible!important;}
+ #screen0 .hero-buttons {position:relative!important;visibility:visible!important;opacity:1!important;flex-shrink:0!important;}
+}
+@media print {html,body,.app,main,.screen.active,.screen.active>.panel{overflow:visible!important;}}
+</style>
+
+<style id="landscape-real-scroll-fix">
+@media screen and (orientation:landscape) {
+ html,body {height:auto!important;min-height:100%!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;position:static!important;touch-action:pan-y!important}
+ .app {height:auto!important;min-height:100dvh!important;max-height:none!important;overflow:visible!important;display:flex!important;flex-direction:column!important;padding:12px 12px 110px!important}
+ main {height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;display:block!important;flex:none!important}
+ .screen {height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;flex:none!important}
+ .screen.active {display:block!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;flex:none!important}
+ .screen.active>.panel,.screen.active .panel {height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;flex:none!important;overscroll-behavior:auto!important}
+ .hero {height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important}
+ .hero-buttons {position:relative!important;visibility:visible!important;opacity:1!important}
+ #screenMap .expedition-panel {height:auto!important;max-height:none!important;overflow:visible!important}
+ .modal.open,.family-mission-overlay.open,.treasure-overlay.open,.cert-overlay.open,.backpack-modal.open,.team-register-overlay.open {overflow-y:auto!important;-webkit-overflow-scrolling:touch!important}
+}
+</style>
+</head>
 <body>
 <div class="app">
 <header class="topbar">
